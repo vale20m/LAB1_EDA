@@ -34,6 +34,7 @@ typedef _sistema* Sistema;
 
 // Definición del main
 
+Sistema MAIN = NULL;
 
 // FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES 
 
@@ -61,25 +62,14 @@ TipoRet TYPE (Sistema & s, Cadena nombreArchivo){
 
 }
 
-void CREARSISTEMA(Sistema & s){
-    cout << s->nombre;
-    cout << s.nombre;
+TipoRet CREARSISTEMA(Sistema & s){
+    s = new _sistema;
+    return OK;
 }
 
 TipoRet DESTRUIRSISTEMA(Sistema & s){
 
 }
-
-/*
-CREARSISTEMA = 1
-DESTRUIRSISTEMA = 2
-CREATEFILE = 3
-DELETE = 4
-ATTRIB = 5
-IF = 6
-DF = 7
-TYPE = 8
-*/
 
 // && comandoEntero[cont] != '\0' && comandoEntero[cont] != '\n'
 
@@ -94,9 +84,10 @@ void dividirComando(Cadena comandoEntero, int & cont, Cadena & Cambio){
 void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2){
     int cont = 0;
     if (comando == "CREARSISTEMA") {
-        if(parametro1 != "" && parametro2 != ""){
+        if(parametro1 == "" && parametro2 == ""){
+            cout << CREARSISTEMA(MAIN);
         } else {
-            CREARSISTEMA(MAIN);
+            return;
         }
     }
     if(comando == "DESTRUIRSISTEMA"){
@@ -137,9 +128,7 @@ void manejarComando(){
 }
 
 int main(){
-    Sistema MAIN = new _sistema;
     manejarComando();
-    cout << "HoLA ESToY cAMbiANDO" << endl;
 }
 
 /*
