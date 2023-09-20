@@ -13,21 +13,28 @@ typedef enum _retorno TipoRet;
 
 struct archivo{
     string nombre;
-    char extension[MAX_CHAR];
+    Cadena extension;
     bool escritura = true;
-    string contenido = "";
+    string contenido;
+    archivo * sig = NULL;
+    archivo * ant = NULL;
 };
 
-struct root {
-    string nombre = "RAIZ";
-    archivo jamon;
-    root * sig;
-    root * origen;
+typedef archivo * archivos;
+
+struct directorio {
+    string nombre;
+    archivos file;
+    directorio * sH;
+    directorio * pH;
 };
+
+typedef directorio * dir;
 
 struct _sistema{
-    string nombre = "PEDRO";
-    root RAIZ;
+    string nombre;
+    dir RAIZ;
+    dir RAIZptr;
 };
 
 typedef _sistema* Sistema;
@@ -38,42 +45,128 @@ Sistema MAIN = NULL;
 
 // FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES 
 
-TipoRet CREATEFILE (Sistema & s, Cadena nombreArchivo){
+// CREATEFILE
 
+bool existeArch(Sistema s, Cadena nombre, Cadena extension){
+    while(s->RAIZ->file->nombre != ""){
+        if(s->RAIZ->file->nombre == nombre && s->RAIZ->file->extension == extension){
+            return true;
+        }
+        s->RAIZ->file = s->RAIZ->file->sig;
+    }
+    return false;
 }
+
+Cadena tomarNombre(Cadena nombreArchivo){
+    Cadena nombre;
+    for (int i = 0; i < nombreArchivo.length(); i++){
+        if (nombreArchivo[i] != '.'){ 
+            nombre += nombreArchivo[i];
+        } else {
+            return nombre;
+        }
+    }
+}
+
+Cadena tomarExtension(Cadena nombreArchivo){
+    Cadena extensionTemp;
+    for(int i = 0; i < nombreArchivo.length(); i++){
+        if(nombreArchivo[i] == '.'){
+            i++;
+            while(i < nombreArchivo.length()){
+                extensionTemp += nombreArchivo[i];
+                i++;
+            }
+            return extensionTemp;
+        }
+    }
+}
+
+archivos colocarPunteroAlFinal(Sistema s){
+    archivos aux = NULL;
+    while(s->RAIZ->file->nombre != ""){
+        s->RAIZ->file = s->RAIZ->file->sig;
+    }
+    aux = s->RAIZ->file;
+    return aux;
+}
+
+TipoRet CREATEFILE (Sistema & s, Cadena nombreArchivo){
+    if(!existeArch(s, tomarNombre(nombreArchivo), tomarExtension(nombreArchivo)) && nombreArchivo != "RAIZ"){
+        archivos aux = colocarPunteroAlFinal(s);
+
+        aux->nombre = tomarNombre(nombreArchivo);
+        cout << aux->nombre << endl;
+
+        aux->extension = tomarExtension(nombreArchivo);
+        cout << aux->extension << endl;
+
+        aux->sig = new archivo;
+        aux->sig->nombre = "";
+        aux->sig->extension = "";
+        
+        cout << "Salí de createfile" << endl;
+        return OK;
+    } else {
+        cout << "Ya existe un archivo con ese nombre completo en el directorio actual" << endl;
+        return ERROR;
+    }
+}
+
+// DELETE
 
 TipoRet DELETE (Sistema & s, Cadena nombreArchivo){
 
 }
 
+// ATTRIB
+
 TipoRet ATTRIB (Sistema & s, Cadena nombreArchivo, Cadena parametro){
 
 }
+
+// IF
 
 TipoRet IF (Sistema & s, Cadena nombreArchivo, Cadena texto){
 
 }
 
+// DF
+
 TipoRet DF (Sistema & s, Cadena nombreArchivo, int k){
 
 }
+
+// TYPE
 
 TipoRet TYPE (Sistema & s, Cadena nombreArchivo){
 
 }
 
+// CREARSISTEMA
+
 TipoRet CREARSISTEMA(Sistema & s){
     s = new _sistema;
+    s->RAIZ = new directorio;
+    s->RAIZ->nombre = "RAIZ";
+    s->RAIZptr = s->RAIZ;
+    s->RAIZ->file = new archivo;
+    s->RAIZ->file->nombre = "";
+    s->RAIZ->file->extension = "";
+    cout << "Se ha creado exitosamente" << endl;
     return OK;
 }
+
+// DESTRUIRSISTEMA
 
 TipoRet DESTRUIRSISTEMA(Sistema & s){
 
 }
 
-// && comandoEntero[cont] != '\0' && comandoEntero[cont] != '\n'
+// ANÁLISIS DE COMANDO
 
 void dividirComando(Cadena comandoEntero, int & cont, Cadena & Cambio){
+    Cambio = "";
     while(comandoEntero[cont] != ' ' && cont < comandoEntero.length()){
         Cambio += comandoEntero[cont];
         cont++;
@@ -83,9 +176,12 @@ void dividirComando(Cadena comandoEntero, int & cont, Cadena & Cambio){
 
 void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2){
     int cont = 0;
+    cout << comando << endl;
+    cout << parametro1 << endl;
     if (comando == "CREARSISTEMA") {
         if(parametro1 == "" && parametro2 == ""){
-            cout << CREARSISTEMA(MAIN);
+            CREARSISTEMA(MAIN);
+            cout << "Salí de crear sistema" << endl;
         } else {
             return;
         }
@@ -94,6 +190,7 @@ void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2){
         return;
     }
     if (comando == "CREATEFILE") {
+        CREATEFILE(MAIN, parametro1);
         return;
     }
     if (comando == "DELETE") {
@@ -113,22 +210,30 @@ void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2){
     }
 }
 
-
 void manejarComando(){
     Cadena comandoEntero;
     Cadena comando;
     Cadena parametro1;
     Cadena parametro2;
-    int cont = 0;
+    int cont;
+    do {
     getline(cin, comandoEntero);
-    dividirComando(comandoEntero, cont, comando);
-    dividirComando(comandoEntero, cont, parametro1);
-    dividirComando(comandoEntero, cont, parametro2);
-    analizarComando(comando, parametro1, parametro2);
+    if(comandoEntero != "EXIT"){
+        cont = 0;
+        dividirComando(comandoEntero, cont, comando);
+        dividirComando(comandoEntero, cont, parametro1);
+        dividirComando(comandoEntero, cont, parametro2);
+        analizarComando(comando, parametro1, parametro2);
+    }
+    } while (comandoEntero != "EXIT");
 }
+
+// MAIN
 
 int main(){
     manejarComando();
+    cout << MAIN->RAIZ->file->nombre << endl;
+    cout << MAIN->RAIZ->file->sig->nombre << endl;
 }
 
 /*
