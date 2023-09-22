@@ -13,10 +13,10 @@ enum _retorno{
 typedef enum _retorno TipoRet;
 
 struct archivo{
-    string nombre;
+    Cadena nombre;
     Cadena extension;
     bool escritura = true;
-    string contenido;
+    Cadena contenido;
     archivo * sig;
     archivo * ant;
 };
@@ -24,7 +24,7 @@ struct archivo{
 typedef archivo * archivos;
 
 struct directorio {
-    string nombre;
+    Cadena nombre;
     archivos file;
     directorio * sH;
     directorio * pH;
@@ -33,7 +33,7 @@ struct directorio {
 typedef directorio * dir;
 
 struct _sistema{
-    string nombre = "SISTEMA";
+    Cadena nombre = "SISTEMA";
     dir RAIZ;
 };
 
@@ -198,7 +198,6 @@ TipoRet DF (Sistema & s, Cadena nombreArchivo, int k){
         for(int i = k; i < aux->contenido.length(); i++){
             resultado += aux->contenido[i];
         }
-        cout << resultado << endl;
         aux->contenido = resultado;
         return OK;
     } else {
