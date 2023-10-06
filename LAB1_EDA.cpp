@@ -39,10 +39,6 @@ struct _sistema{
 
 typedef _sistema* Sistema;
 
-// Definición del main
-
-Sistema MAIN = NULL;
-
 // FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES 
 
 // CREATEFILE
@@ -140,7 +136,8 @@ TipoRet ATTRIB (Sistema & s, Cadena nombreArchivo, Cadena parametro){
         if(parametro == "+W"){
             aux->escritura = true;
             return OK;
-        } else {
+        }
+        if(parametro == "-W"){
             aux->escritura = false;
             return OK;
         }
@@ -279,7 +276,7 @@ int convertirAInt(Cadena parametro){
     return numero;
 }
 
-void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2){
+void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Sistema & MAIN){
     int cont = 0;
     if (comando == "CREARSISTEMA") {
         if(parametro1 == "" && parametro2 == ""){
@@ -318,7 +315,7 @@ void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2){
     }
 }
 
-void manejarComando(){
+void manejarComando(Sistema & MAIN){
     Cadena comandoEntero;
     Cadena comando;
     Cadena parametro1;
@@ -331,7 +328,7 @@ void manejarComando(){
         dividirComando(comandoEntero, cont, comando);
         dividirComando(comandoEntero, cont, parametro1);
         dividirComando(comandoEntero, cont, parametro2);
-        analizarComando(comando, parametro1, parametro2);
+        analizarComando(comando, parametro1, parametro2, MAIN);
     }
     } while (comandoEntero != "EXIT");
 }
@@ -351,6 +348,10 @@ void leerExistentes(Sistema s){
 }
 
 int main(){
-    manejarComando();
+    // Definición del main
+
+    Sistema s = NULL;
+
+    manejarComando(s);
     // leerExistentes(MAIN);
 }
