@@ -121,13 +121,13 @@ Cadena tomarExtension(Cadena nombreArchivo){
     }
 }
 
-void imprimirTest(Sistema s){
-    archivos aux = s->RAIZ->file;
-    while(aux != NULL){
-        cout << aux->nombre << "." << aux->extension << " - ";
-        aux = aux->sig;
-    }
-}
+// void imprimirTest(Sistema s){
+//     archivos aux = s->RAIZ->file;
+//     while(aux != NULL){
+//         cout << aux->nombre << "." << aux->extension << " - ";
+//         aux = aux->sig;
+//     }
+// }
 
 TipoRet CREATEFILE (Sistema & s, Cadena nombreArchivo){
     archivos puntVerificar = NULL;
@@ -151,7 +151,7 @@ TipoRet CREATEFILE (Sistema & s, Cadena nombreArchivo){
 
 
         puntFinal->sig = nuevoArchivo;
-        imprimirTest(s);
+        // imprimirTest(s);
         return OK;
     } else {
         cout << "Ya existe un archivo con ese nombre completo en el directorio actual" << endl;
@@ -312,17 +312,36 @@ TipoRet CREARSISTEMA(Sistema & s){
 
 // DESTRUIRSISTEMA
 
-void borrarArchivos(archivos borrar){
-    if (borrar->sig != NULL){
-        borrarArchivos(borrar->sig);
+void borrarArchivos(archivos & archivosABorrar){
+    if(archivosABorrar == NULL){
+        return;
     }
+    if(archivosABorrar->sig != NULL){
+        borrarArchivos(archivosABorrar->sig);
+    }
+    cout << "Borré el archivo: " << archivosABorrar->nombre << endl;
+    delete archivosABorrar;
+}
+
+void borrarHijos(dir & borrar){
+    if(borrar == NULL){
+        return;
+    }
+    if(borrar->sH != NULL){
+        borrarHijos(borrar->sH);
+    }
+    if(borrar->pH != NULL){
+        borrarHijos(borrar->pH);
+    }
+    borrarArchivos(borrar->file);
+    cout << "Borré el directorio: " << borrar->nombre << endl;
     delete borrar;
 }
 
+// PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR 
+
 TipoRet DESTRUIRSISTEMA(Sistema & s){
-    archivos borrar = s->RAIZ->file;
-    borrarArchivos(borrar);
-    delete s->RAIZ;
+    borrarHijos(s->RAIZ);
     delete s;
     return OK;
 }
@@ -464,7 +483,19 @@ TipoRet MKDIR (Sistema &s, Cadena nombreDirectorio){
 // RMDIR
 
 TipoRet RMDIR (Sistema &s, Cadena nombreDirectorio){
-    
+    dir aux = s->actual->pH;
+    if(nombreDirectorioExistente(aux, nombreDirectorio)){
+        while(aux->sH->nombre != nombreDirectorio){
+            aux = aux->sH;
+        }
+    } else {
+        cout << "No existe el directorio que se pretende eliminar" << endl;
+        return ERROR;
+    }
+    dir borrar = aux->sH;
+    aux->sH = borrar->sH;
+    borrarHijos(borrar);
+    return OK;
 }
 
 // MOVE
@@ -545,9 +576,15 @@ void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Siste
     }
     if(comando == "CD"){
         CD(MAIN, parametro1);
+        return;
     }
     if(comando == "MKDIR"){
         MKDIR(MAIN, parametro1);
+        return;
+    }
+    if(comando == "RMDIR"){
+        RMDIR(MAIN, parametro1);
+        return;
     }
 }
 
