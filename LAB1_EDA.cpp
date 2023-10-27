@@ -44,11 +44,45 @@ typedef _sistema * Sistema;
 
 // CREATEFILE
 
-void moverPunteroAlFinal(archivos & aux, Sistema s){
-    aux = s->actual->file;
-    while(aux->sig != NULL){
-        aux = aux->sig;
+archivos buscarEspacioArchAlfabeticamente(archivos cadenaArchivos, Cadena nombreArchivo, Cadena extensionArchivo){
+    int cont = 0;
+    while(cadenaArchivos->sig != NULL){
+        if(nombreArchivo == cadenaArchivos->sig->nombre){
+            string nombreArchivoTemp = cadenaArchivos->sig->nombre;
+            while(cadenaArchivos->sig != NULL && nombreArchivoTemp == cadenaArchivos->sig->nombre && cont < extensionArchivo.length()){
+                if(cadenaArchivos->sig->extension[cont] < extensionArchivo[cont]){
+                    cadenaArchivos = cadenaArchivos->sig;
+                    cont = 0;
+                }
+                else if(cadenaArchivos->sig->extension[cont] > extensionArchivo[cont]){
+                    return cadenaArchivos;
+                } else {
+                    cont++;
+                    if (cont >= extensionArchivo.length()){
+                        return cadenaArchivos;
+                    }
+                }
+            }
+        } else {
+            bool cambioArchivo = false;
+            while(cadenaArchivos->sig != NULL && !cambioArchivo && cont < nombreArchivo.length()){
+                if(cadenaArchivos->sig->nombre[cont] < nombreArchivo[cont]){
+                    cadenaArchivos = cadenaArchivos->sig;
+                    cambioArchivo = true;
+                    cont = 0;
+                }
+                else if(cadenaArchivos->sig->nombre[cont] > nombreArchivo[cont]){
+                    return cadenaArchivos;
+                } else {
+                    cont++;
+                    if (cont >= nombreArchivo.length()){
+                        return cadenaArchivos;
+                    }
+                }
+            }
+        }
     }
+    return cadenaArchivos;
 }
 
 bool existeArch(archivos & aux, Sistema s, Cadena nombre, Cadena extension){
@@ -87,19 +121,37 @@ Cadena tomarExtension(Cadena nombreArchivo){
     }
 }
 
+void imprimirTest(Sistema s){
+    archivos aux = s->RAIZ->file;
+    while(aux != NULL){
+        cout << aux->nombre << "." << aux->extension << " - ";
+        aux = aux->sig;
+    }
+}
+
 TipoRet CREATEFILE (Sistema & s, Cadena nombreArchivo){
     archivos puntVerificar = NULL;
     if(!existeArch(puntVerificar, s, tomarNombre(nombreArchivo), tomarExtension(nombreArchivo)) && nombreArchivo != "RAIZ"){
 
-        archivos puntFinal = NULL;
-        moverPunteroAlFinal(puntFinal, s);
+        // archivos puntFinal = NULL;
+        // moverPunteroAlFinal(puntFinal, s);
+
+        archivos puntFinal = buscarEspacioArchAlfabeticamente(s->actual->file, tomarNombre(nombreArchivo), tomarExtension(nombreArchivo));
 
         archivos nuevoArchivo = new archivo;
         nuevoArchivo->nombre = tomarNombre(nombreArchivo);
         nuevoArchivo->extension = tomarExtension(nombreArchivo);
-        nuevoArchivo->sig = NULL;
+        // nuevoArchivo->sig = NULL;
+
+        if (puntFinal->sig == NULL){
+            nuevoArchivo->sig = NULL;
+        } else {
+            nuevoArchivo->sig = puntFinal->sig;
+        }
+
 
         puntFinal->sig = nuevoArchivo;
+        imprimirTest(s);
         return OK;
     } else {
         cout << "Ya existe un archivo con ese nombre completo en el directorio actual" << endl;
@@ -349,9 +401,26 @@ TipoRet CD (Sistema & s, Cadena nombreDirectorio){
 
 // MKDIR
 
-dir buscarEspacioParaDirectorio(dir cadenaDirectorios){
-    while(cadenaDirectorios->sH != NULL){
-        cadenaDirectorios = cadenaDirectorios->sH;
+// void imprimirTest(Sistema s){
+//     dir aux = s->RAIZ->pH;
+//     while(aux != NULL){
+//         cout << aux->nombre << " - ";
+//         aux = aux->sH;
+//     }
+// }
+
+dir buscarEspacioDirAlfabeticamente(dir cadenaDirectorios, Cadena nombreDirectorio){
+    int cont = 0;
+    while(cont < nombreDirectorio.length() && cadenaDirectorios->sH != NULL){
+        if(cadenaDirectorios->sH->nombre[cont] < nombreDirectorio[cont]){
+            cadenaDirectorios = cadenaDirectorios->sH;
+            cont = 0;
+        }
+        else if(cadenaDirectorios->sH->nombre[cont] > nombreDirectorio[cont]){
+            return cadenaDirectorios;
+        } else {
+            cont++;
+        }
     }
     return cadenaDirectorios;
 }
@@ -370,17 +439,25 @@ TipoRet MKDIR (Sistema &s, Cadena nombreDirectorio){
         return ERROR;
     }
 
-    dir espacioVacio = buscarEspacioParaDirectorio(s->actual->pH);
-
+    dir espacioParaColocar = buscarEspacioDirAlfabeticamente(s->actual->pH, nombreDirectorio);
+    
     dir nuevo = new directorio;
     nuevo->nombre = nombreDirectorio;
     nuevo->file = crearArchivoDummy();
-    nuevo->sH = NULL;
     nuevo->pH = crearDirectorioDummy();
     nuevo->padre = s->actual;
     nuevo->pH->padre = nuevo;
+
+    if(espacioParaColocar->sH == NULL){
+        nuevo->sH = NULL;
+        espacioParaColocar->sH = nuevo;
+    } else {
+        nuevo->sH = espacioParaColocar->sH;
+        espacioParaColocar->sH = nuevo;
+    }
     
-    espacioVacio->sH = nuevo;
+    // imprimirTest(s);
+
     return OK;
 }
 
