@@ -18,7 +18,6 @@ struct archivo{
     bool escritura = true;
     Cadena contenido;
     archivo * sig;
-    archivo * ant;
 };
 
 typedef archivo * archivos;
@@ -28,6 +27,7 @@ struct directorio {
     archivos file;
     directorio * sH;
     directorio * pH;
+    directorio * padre;
 };
 
 typedef directorio * dir;
@@ -35,23 +35,24 @@ typedef directorio * dir;
 struct _sistema{
     Cadena nombre = "SISTEMA";
     dir RAIZ;
+    dir actual;
 };
 
-typedef _sistema* Sistema;
+typedef _sistema * Sistema;
 
 // FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES FUNCIONES 
 
 // CREATEFILE
 
 void moverPunteroAlFinal(archivos & aux, Sistema s){
-    aux = s->RAIZ->file;
+    aux = s->actual->file;
     while(aux->sig != NULL){
         aux = aux->sig;
     }
 }
 
 bool existeArch(archivos & aux, Sistema s, Cadena nombre, Cadena extension){
-    aux = s->RAIZ->file;
+    aux = s->actual->file;
     while(aux != NULL){
         if(aux->nombre == nombre && aux->extension == extension){
             return true;
@@ -222,13 +223,38 @@ TipoRet TYPE (Sistema & s, Cadena nombreArchivo){
 
 // CREARSISTEMA
 
+dir crearDirectorioDummy(){
+    dir dummy = new directorio;
+    dummy->nombre = "NULL";
+    dummy->file = NULL;
+    dummy->pH = NULL;
+    dummy->sH = NULL;
+    return dummy;
+}
+
+archivos crearArchivoDummy(){
+    archivos dummy = new archivo;
+    dummy->nombre = "NULL";
+    dummy->sig = NULL;
+    return dummy;
+}
+
 TipoRet CREARSISTEMA(Sistema & s){
     s = new _sistema;
+    
     s->RAIZ = new directorio;
     s->RAIZ->nombre = "RAIZ";
-    s->RAIZ->file = new archivo;
-    s->RAIZ->file->nombre = "NULL";
-    s->RAIZ->file->sig = NULL;
+    s->actual = s->RAIZ;
+
+    // Creamos un primer archivo dummy
+
+    s->RAIZ->file = crearArchivoDummy();
+    
+    // Creamos un primer hijo dummy
+
+    s->RAIZ->pH = crearDirectorioDummy();
+    s->RAIZ->pH->padre = s->actual;
+
     return OK;
 }
 
@@ -247,6 +273,133 @@ TipoRet DESTRUIRSISTEMA(Sistema & s){
     delete s->RAIZ;
     delete s;
     return OK;
+}
+
+// CD
+
+bool nombreDirectorioExistente(dir cadenaDirectorios, Cadena nombreDirectorio){
+    while(cadenaDirectorios->sH != NULL){
+        cadenaDirectorios = cadenaDirectorios->sH;
+        if (cadenaDirectorios->nombre == nombreDirectorio){
+            return true;
+        }
+    }
+    return false;
+}
+
+Cadena dividirNombreCD(Cadena ruta, int & cont){
+    Cadena sigDir;
+    cont++;
+    while(ruta[cont] != '/' && cont < ruta.length()){
+        sigDir += ruta[cont];
+        cont++;
+    }
+    return sigDir;
+}
+
+TipoRet CD (Sistema & s, Cadena nombreDirectorio){
+    if(nombreDirectorio == ".."){
+        if(s->actual->nombre == "RAIZ"){
+            cout << "No existe el directorio al que se pretende ir" << endl;
+            return ERROR;
+        }
+        s->actual = s->actual->padre;
+        return OK;
+    }
+    if(nombreDirectorio[0] == '/'){
+        dir aux = s->RAIZ;
+        int cont = 0;
+        bool casoRaiz = true;
+        while(cont < nombreDirectorio.length()){
+            Cadena sigDir = dividirNombreCD(nombreDirectorio, cont);
+            if(!casoRaiz){
+                if(nombreDirectorioExistente(aux->pH, sigDir)){
+                    aux = aux->pH;
+                    while(aux->nombre != sigDir){
+                        aux = aux->sH;
+                    }
+                } else {
+                    cout << "No existe el directorio al que se pretende ir" << endl;
+                    return ERROR;
+                }
+            }
+            if(sigDir != "RAIZ" && casoRaiz){
+                cout << "No existe el directorio al que se pretende ir" << endl;
+                return ERROR;
+            }
+            casoRaiz = false;
+        }
+        s->actual = aux;
+        return OK;
+    }
+    if(nombreDirectorio == "RAIZ"){
+        s->actual = s->RAIZ;
+        return OK;
+    }
+    if(nombreDirectorioExistente(s->actual->pH, nombreDirectorio)){
+        s->actual = s->actual->pH;
+        while(s->actual->nombre != nombreDirectorio){
+            s->actual = s->actual->sH;
+        }
+        return OK;
+    }
+    cout << "No existe el directorio al que se pretende ir" << endl;
+    return ERROR;
+}
+
+// MKDIR
+
+dir buscarEspacioParaDirectorio(dir cadenaDirectorios){
+    while(cadenaDirectorios->sH != NULL){
+        cadenaDirectorios = cadenaDirectorios->sH;
+    }
+    return cadenaDirectorios;
+}
+
+TipoRet MKDIR (Sistema &s, Cadena nombreDirectorio){
+    if(nombreDirectorio == "RAIZ"){
+        cout << "El nombre del directorio no puede ser RAIZ" << endl;
+        return ERROR;
+    }
+    if(nombreDirectorioExistente(s->actual->pH, nombreDirectorio)){
+        cout << "El directorio actual ya contiene un subdirectorio con ese nombre" << endl;
+        return ERROR;
+    }
+    if (nombreDirectorio == "NULL"){
+        cout << "El nombre del directorio no puede ser NULL" << endl;
+        return ERROR;
+    }
+
+    dir espacioVacio = buscarEspacioParaDirectorio(s->actual->pH);
+
+    dir nuevo = new directorio;
+    nuevo->nombre = nombreDirectorio;
+    nuevo->file = crearArchivoDummy();
+    nuevo->sH = NULL;
+    nuevo->pH = crearDirectorioDummy();
+    nuevo->padre = s->actual;
+    nuevo->pH->padre = nuevo;
+    
+    espacioVacio->sH = nuevo;
+    return OK;
+}
+
+// RMDIR
+
+TipoRet RMDIR (Sistema &s, Cadena nombreDirectorio){
+    
+}
+
+// MOVE
+
+TipoRet MOVE (Sistema &s, Cadena nombre, Cadena directorioDestino){
+    
+}
+
+// DIR
+
+TipoRet DIR (Sistema &s, Cadena parametro){
+
 }
 
 // ANÁLISIS DE COMANDO
@@ -313,6 +466,12 @@ void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Siste
         TYPE(MAIN, parametro1);
         return;
     }
+    if(comando == "CD"){
+        CD(MAIN, parametro1);
+    }
+    if(comando == "MKDIR"){
+        MKDIR(MAIN, parametro1);
+    }
 }
 
 void manejarComando(Sistema & MAIN){
@@ -329,6 +488,7 @@ void manejarComando(Sistema & MAIN){
         dividirComando(comandoEntero, cont, parametro1);
         dividirComando(comandoEntero, cont, parametro2);
         analizarComando(comando, parametro1, parametro2, MAIN);
+        cout << MAIN->actual->nombre << endl;
     }
     } while (comandoEntero != "EXIT");
 }
@@ -353,5 +513,5 @@ int main(){
     Sistema s = NULL;
 
     manejarComando(s);
-    // leerExistentes(MAIN);
+    leerExistentes(s);
 }
