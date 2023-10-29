@@ -119,6 +119,7 @@ Cadena tomarExtension(Cadena nombreArchivo){
             return extensionTemp;
         }
     }
+    return extensionTemp;
 }
 
 // void imprimirTest(Sistema s){
@@ -297,6 +298,7 @@ TipoRet CREARSISTEMA(Sistema & s){
     s->RAIZ = new directorio;
     s->RAIZ->nombre = "RAIZ";
     s->RAIZ->sH = NULL;
+    s->RAIZ->padre = NULL;
     s->actual = s->RAIZ;
 
     // Creamos un primer archivo dummy
@@ -501,13 +503,104 @@ TipoRet RMDIR (Sistema &s, Cadena nombreDirectorio){
 
 // MOVE
 
-dir buscarDirDestino(Cadena directorioDestino){
+// Cadena dividirNombreCD(Cadena ruta, int & cont){
+//     Cadena sigDir;
+//     cont++;
+//     while(ruta[cont] != '/' && cont < ruta.length()){
+//         sigDir += ruta[cont];
+//         cont++;
+//     }
+//     return sigDir;
+// }
+
+dir buscarDirDestino(Sistema s, Cadena directorioDestino){
+    if(directorioDestino[0] == '/'){
+        dir aux = s->RAIZ;
+        int cont = 0;
+        bool casoRaiz = true;
+        while(cont < directorioDestino.length()){
+            Cadena sigDir = dividirNombreCD(directorioDestino, cont);
+            if(!casoRaiz){
+                if(nombreDirectorioExistente(aux->pH, sigDir)){
+                    aux = aux->pH;
+                    while(aux->nombre != sigDir){
+                        aux = aux->sH;
+                    }
+                } else {
+                    return NULL;
+                }
+            }
+            if(sigDir != "RAIZ" && casoRaiz){
+                return NULL;
+            }
+            casoRaiz = false;
+        }
+        return aux;
+    }
+}
+
+dir buscarAnteriorMOVEDir(dir cadenaDirectorios, Cadena nombreDir){
+    while(cadenaDirectorios->sH != NULL && cadenaDirectorios->sH->nombre != nombreDir){
+        cadenaDirectorios = cadenaDirectorios->sH;
+    }
+    return cadenaDirectorios;
+}
+
+archivos buscarAnteriorMOVEFile(archivos cadenaArchvos, Cadena nombreArch){
     
-    return;
+}
+
+bool existeDir(dir cadenaDirectorios, Cadena nombre){
+    while(cadenaDirectorios->sH != NULL && cadenaDirectorios->nombre != nombre){
+        cadenaDirectorios = cadenaDirectorios->sH;
+    }
+    if(cadenaDirectorios->nombre == nombre){
+        return true;
+    }
+    return false;
 }
 
 TipoRet MOVE (Sistema &s, Cadena nombre, Cadena directorioDestino){
-    
+    dir destino = buscarDirDestino(s, directorioDestino);
+    if(destino == NULL){
+        cout << "No existe el directorio al que se pretende ir" << endl;
+        return ERROR;
+    }
+    if(tomarExtension(nombre) == ""){
+        cout << "entre al if linea 570" << endl;
+        dir anteriorMOVE = buscarAnteriorMOVEDir(s->actual->pH, nombre);
+        dir espacioDir;
+        if(existeDir(destino->pH, nombre)){
+            dir aux = destino->pH;
+            while(aux->sH->nombre != nombre){
+                aux = aux->sH;
+            }
+            espacioDir = aux;
+            dir borrar = espacioDir->sH;
+            dir MOVE = anteriorMOVE->sH;
+            anteriorMOVE->sH = MOVE->sH;
+            MOVE->sH = borrar->sH;
+            espacioDir->sH = MOVE;
+            borrarHijos(borrar);
+            return OK;
+        } else {
+            cout << "entre al else linea 587" << endl;
+            espacioDir = buscarEspacioDirAlfabeticamente(destino->pH, nombre);
+        }
+        if(espacioDir->sH == NULL){
+            espacioDir->sH = anteriorMOVE->sH;
+            anteriorMOVE->sH = anteriorMOVE->sH->sH;
+            espacioDir->sH->sH = NULL;
+        } else {
+            dir MOVE = anteriorMOVE->sH;
+            anteriorMOVE->sH = MOVE->sH;
+            MOVE->sH = espacioDir->sH;
+            espacioDir->sH = MOVE;
+        }
+        return OK;
+    } else {
+        archivos anteriorMOVE = buscarAnteriorMOVEFile(s->actual->file, nombre);
+    }
 }
 
 // DIR
@@ -541,38 +634,17 @@ void leerCarpeta(dir carpetaALeer, Cadena ruta){
     }
 }
 
-// Cadena obtenerRutaActual(dir recorrido, dir actual, Cadena ruta){
-//     if (recorrido == NULL){
-//         ruta = "";
-//         return ruta;
-//     }
-//     if (recorrido->nombre != "NULL" && actual->nombre != recorrido->nombre){
-//        ruta += "/" + recorrido->nombre;
-//     }
-//     if(actual->nombre == recorrido->nombre){
-//         return ruta;
-//     }
-//     Cadena rutasH = ruta + obtenerRutaActual(recorrido->sH, actual, ruta);
-//     Cadena rutapH = ruta + obtenerRutaActual(recorrido->pH, actual, ruta);
-//     if(rutasH.length() > 0){
-//         return rutasH;
-//     } else {
-//         return rutapH;
-//     }
-// }
-
-
 Cadena obtenerRutaActual(dir actual, Cadena ruta){
     if (actual == NULL){
         return ruta;
     }
-    ruta = "/" + actual->nombre + ruta;
-    obtenerRutaActual(actual->padre, ruta);
+    Cadena nombreActual = "/" + actual->nombre;
+    ruta = nombreActual + ruta;
+    ruta = obtenerRutaActual(actual->padre, ruta);
     return ruta;
 }
 
 void obtenerContenido(dir actual, Cadena ruta){
-    ruta += "/" + actual->nombre;
     cout << ruta << endl;
     if (actual->file->sig == NULL && actual->pH->sH == NULL){
         cout << "El directorio está vacío" << endl;
