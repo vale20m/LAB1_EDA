@@ -48,7 +48,7 @@ archivos buscarEspacioArchAlfabeticamente(archivos cadenaArchivos, Cadena nombre
     int cont = 0;
     while(cadenaArchivos->sig != NULL){
         if(nombreArchivo == cadenaArchivos->sig->nombre){
-            string nombreArchivoTemp = cadenaArchivos->sig->nombre;
+            Cadena nombreArchivoTemp = cadenaArchivos->sig->nombre;
             while(cadenaArchivos->sig != NULL && nombreArchivoTemp == cadenaArchivos->sig->nombre && cont < extensionArchivo.length()){
                 if(cadenaArchivos->sig->extension[cont] < extensionArchivo[cont]){
                     cadenaArchivos = cadenaArchivos->sig;
@@ -168,7 +168,7 @@ TipoRet DELETE (Sistema & s, Cadena nombreArchivo){
             cout << "El archivo existe, pero es de sólo lectura." << endl;
             return ERROR;
         }
-        archivos aux = s->RAIZ->file;
+        archivos aux = s->actual->file;
         while(aux->sig != borrar){
             aux = aux->sig;
         }
@@ -296,6 +296,7 @@ TipoRet CREARSISTEMA(Sistema & s){
     
     s->RAIZ = new directorio;
     s->RAIZ->nombre = "RAIZ";
+    s->RAIZ->sH = NULL;
     s->actual = s->RAIZ;
 
     // Creamos un primer archivo dummy
@@ -312,7 +313,7 @@ TipoRet CREARSISTEMA(Sistema & s){
 
 // DESTRUIRSISTEMA
 
-void borrarArchivos(archivos & archivosABorrar){
+void borrarArchivos(archivos archivosABorrar){
     if(archivosABorrar == NULL){
         return;
     }
@@ -323,7 +324,7 @@ void borrarArchivos(archivos & archivosABorrar){
     delete archivosABorrar;
 }
 
-void borrarHijos(dir & borrar){
+void borrarHijos(dir borrar){
     if(borrar == NULL){
         return;
     }
@@ -500,14 +501,109 @@ TipoRet RMDIR (Sistema &s, Cadena nombreDirectorio){
 
 // MOVE
 
+dir buscarDirDestino(Cadena directorioDestino){
+    
+    return;
+}
+
 TipoRet MOVE (Sistema &s, Cadena nombre, Cadena directorioDestino){
     
 }
 
 // DIR
 
-TipoRet DIR (Sistema &s, Cadena parametro){
+void leerArchivos(archivos archivosALeer, Cadena ruta){
+    if(archivosALeer == NULL){
+        return;
+    }
+    if(archivosALeer->nombre != "NULL"){
+        cout << ruta << "/" << archivosALeer->nombre << "." << archivosALeer->extension << endl;
+    }
+    if(archivosALeer->sig != NULL){
+        leerArchivos(archivosALeer->sig, ruta);
+    }
+}
 
+void leerCarpeta(dir carpetaALeer, Cadena ruta){
+    if(carpetaALeer == NULL){
+        return;
+    }
+    if(carpetaALeer->nombre != "NULL"){
+        Cadena rutaConHermano = ruta + "/" + carpetaALeer->nombre;
+        cout << rutaConHermano << endl;
+        leerArchivos(carpetaALeer->file, rutaConHermano);
+        if(carpetaALeer->pH != NULL){
+            leerCarpeta(carpetaALeer->pH, rutaConHermano);
+        }
+    }
+    if(carpetaALeer->sH != NULL){
+        leerCarpeta(carpetaALeer->sH, ruta);
+    }
+}
+
+// Cadena obtenerRutaActual(dir recorrido, dir actual, Cadena ruta){
+//     if (recorrido == NULL){
+//         ruta = "";
+//         return ruta;
+//     }
+//     if (recorrido->nombre != "NULL" && actual->nombre != recorrido->nombre){
+//        ruta += "/" + recorrido->nombre;
+//     }
+//     if(actual->nombre == recorrido->nombre){
+//         return ruta;
+//     }
+//     Cadena rutasH = ruta + obtenerRutaActual(recorrido->sH, actual, ruta);
+//     Cadena rutapH = ruta + obtenerRutaActual(recorrido->pH, actual, ruta);
+//     if(rutasH.length() > 0){
+//         return rutasH;
+//     } else {
+//         return rutapH;
+//     }
+// }
+
+
+Cadena obtenerRutaActual(dir actual, Cadena ruta){
+    if (actual == NULL){
+        return ruta;
+    }
+    ruta = "/" + actual->nombre + ruta;
+    obtenerRutaActual(actual->padre, ruta);
+    return ruta;
+}
+
+void obtenerContenido(dir actual, Cadena ruta){
+    ruta += "/" + actual->nombre;
+    cout << ruta << endl;
+    if (actual->file->sig == NULL && actual->pH->sH == NULL){
+        cout << "El directorio está vacío" << endl;
+        return;
+    }
+    archivos aux = actual->file;
+    while (aux->sig != NULL){
+        aux = aux->sig;
+        cout << aux->nombre << "." << aux->extension;
+        if (aux->escritura){
+            cout << "     " << "Lectura/Escritura" << endl;
+        } else {
+            cout << "     " << "Lectura" << endl;
+        }
+    }
+    actual = actual->pH;
+    while (actual->sH != NULL){
+        actual = actual->sH;
+        cout << actual->nombre << endl;
+    }
+}
+
+TipoRet DIR (Sistema &s, Cadena parametro){
+    Cadena ruta;
+    if(parametro == "/S"){
+        leerCarpeta(s->RAIZ, ruta);
+        return OK;
+    }
+    ruta = obtenerRutaActual(s->actual, ruta);
+    obtenerContenido(s->actual, ruta);
+    return OK;
 }
 
 // ANÁLISIS DE COMANDO
@@ -542,49 +638,118 @@ void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Siste
     if (comando == "CREARSISTEMA") {
         if(parametro1 == "" && parametro2 == ""){
             CREARSISTEMA(MAIN);
+            return;
         } else {
+            cout << "El comando CREARSISTEMA no toma parámetros" << endl;
             return;
         }
     }
     if(comando == "DESTRUIRSISTEMA"){
-        DESTRUIRSISTEMA(MAIN);
-        return;
+        if(parametro1 == "" && parametro2 == ""){
+            DESTRUIRSISTEMA(MAIN);
+            return;    
+        } else {
+            cout << "El comando DESTRUIRSISTEM no toma parámetros" << endl;
+            return;
+        }  
     }
     if (comando == "CREATEFILE") {
-        CREATEFILE(MAIN, parametro1);
-        return;
+        if (parametro1 != "" && parametro2 == ""){
+            CREATEFILE(MAIN, parametro1);
+            return;
+        } else {
+            cout << "El comando CREATEFILE toma solo un parámetro" << endl;
+        }
     }
     if (comando == "DELETE") {
-        DELETE(MAIN, parametro1);
-        return;
+        if(parametro1 != "" && parametro2 == ""){
+            DELETE(MAIN, parametro1);
+            return;
+        } else {
+            cout << "El comando DELETE toma solo un parámetro" << endl;
+            return;
+        }
     }
     if (comando == "ATTRIB") {
-        ATTRIB(MAIN, parametro1, parametro2);
-        return;
+        if (parametro1 != "" && parametro2 != ""){
+            ATTRIB(MAIN, parametro1, parametro2);
+            return;
+        } else {
+            cout << "El comando ATTRIB necesita ambos parámetros" << endl;
+            return;
+        }
     }
     if (comando == "IF") {
-        IF(MAIN, parametro1, parametro2);
-        return;
+        if (parametro1 != "" && parametro2 != ""){
+            IF(MAIN, parametro1, parametro2);
+            return;
+        } else {
+            cout << "El comando IF necesita ambos parámetros" << endl;
+            return;
+        }
     }
     if (comando == "DF") {
-        DF(MAIN, parametro1, convertirAInt(parametro2));
-        return;
+        if (parametro1 != "" && parametro2 != ""){
+            DF(MAIN, parametro1, convertirAInt(parametro2));
+            return;
+        } else {
+            cout << "El comando DF necesita ambos parámetros" << endl;
+            return;
+        }
     }
     if (comando == "TYPE") {
-        TYPE(MAIN, parametro1);
-        return;
+        if (parametro1 != "" && parametro2 == ""){
+            TYPE(MAIN, parametro1);
+            return;
+        } else {
+            cout << "El comando TYPE toma solo un parámetro" << endl;
+            return;
+        }
     }
     if(comando == "CD"){
-        CD(MAIN, parametro1);
-        return;
+        if (parametro1 != "" && parametro2 == ""){
+            CD(MAIN, parametro1);
+            return;
+        } else {
+            cout << "El comando CD toma solo un parámetro" << endl;
+            return;
+        }
     }
     if(comando == "MKDIR"){
-        MKDIR(MAIN, parametro1);
-        return;
+        if (parametro1 != "" && parametro2 == ""){
+            MKDIR(MAIN, parametro1);
+            return;
+        } else {
+            cout << "El comando MKDIR toma solo un parámetro" << endl;
+            return;
+        }
     }
     if(comando == "RMDIR"){
-        RMDIR(MAIN, parametro1);
-        return;
+        if (parametro1 != "" && parametro2 == ""){
+            RMDIR(MAIN, parametro1);
+            return;
+        } else {
+            cout << "El comando RMDIR toma solo un parámetro" << endl;
+            return;
+        }
+    }
+    if(comando == "MOVE"){
+        if(parametro1 != "" && parametro2 != ""){
+            MOVE(MAIN, parametro1, parametro2);
+            return;
+        } else {
+            cout << "El comando MOVE necesita ambos parámetros" << endl;
+            return;
+        }
+    }
+    if(comando == "DIR"){
+        if (parametro2 == ""){
+            DIR(MAIN, parametro1);
+            return;
+        } else {
+            cout << "El comando DIR puede tomar solo un parámetro" << endl;
+            return;
+        }
     }
 }
 
@@ -602,7 +767,6 @@ void manejarComando(Sistema & MAIN){
         dividirComando(comandoEntero, cont, parametro1);
         dividirComando(comandoEntero, cont, parametro2);
         analizarComando(comando, parametro1, parametro2, MAIN);
-        cout << MAIN->actual->nombre << endl;
     }
     } while (comandoEntero != "EXIT");
 }
