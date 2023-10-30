@@ -122,27 +122,15 @@ Cadena tomarExtension(Cadena nombreArchivo){
     return extensionTemp;
 }
 
-// void imprimirTest(Sistema s){
-//     archivos aux = s->RAIZ->file;
-//     while(aux != NULL){
-//         cout << aux->nombre << "." << aux->extension << " - ";
-//         aux = aux->sig;
-//     }
-// }
-
 TipoRet CREATEFILE (Sistema & s, Cadena nombreArchivo){
     archivos puntVerificar = NULL;
     if(!existeArch(puntVerificar, s, tomarNombre(nombreArchivo), tomarExtension(nombreArchivo)) && nombreArchivo != "RAIZ"){
-
-        // archivos puntFinal = NULL;
-        // moverPunteroAlFinal(puntFinal, s);
 
         archivos puntFinal = buscarEspacioArchAlfabeticamente(s->actual->file, tomarNombre(nombreArchivo), tomarExtension(nombreArchivo));
 
         archivos nuevoArchivo = new archivo;
         nuevoArchivo->nombre = tomarNombre(nombreArchivo);
         nuevoArchivo->extension = tomarExtension(nombreArchivo);
-        // nuevoArchivo->sig = NULL;
 
         if (puntFinal->sig == NULL){
             nuevoArchivo->sig = NULL;
@@ -150,9 +138,7 @@ TipoRet CREATEFILE (Sistema & s, Cadena nombreArchivo){
             nuevoArchivo->sig = puntFinal->sig;
         }
 
-
         puntFinal->sig = nuevoArchivo;
-        // imprimirTest(s);
         return OK;
     } else {
         cout << "Ya existe un archivo con ese nombre completo en el directorio actual" << endl;
@@ -190,10 +176,12 @@ TipoRet ATTRIB (Sistema & s, Cadena nombreArchivo, Cadena parametro){
         if(parametro == "+W"){
             aux->escritura = true;
             return OK;
-        }
-        if(parametro == "-W"){
+        } else if(parametro == "-W"){
             aux->escritura = false;
             return OK;
+        } else {
+            cout << "Ingrese un parámetro válido" << endl;
+            return ERROR;
         }
     } else {
         cout << "No existe un archivo con ese nombre en el directorio actual" << endl;
@@ -322,7 +310,6 @@ void borrarArchivos(archivos archivosABorrar){
     if(archivosABorrar->sig != NULL){
         borrarArchivos(archivosABorrar->sig);
     }
-    cout << "Borré el archivo: " << archivosABorrar->nombre << endl;
     delete archivosABorrar;
 }
 
@@ -337,11 +324,8 @@ void borrarHijos(dir borrar){
         borrarHijos(borrar->pH);
     }
     borrarArchivos(borrar->file);
-    cout << "Borré el directorio: " << borrar->nombre << endl;
     delete borrar;
 }
-
-// PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR PARA SOLUCIONAR 
 
 TipoRet DESTRUIRSISTEMA(Sistema & s){
     borrarHijos(s->RAIZ);
@@ -423,14 +407,6 @@ TipoRet CD (Sistema & s, Cadena nombreDirectorio){
 
 // MKDIR
 
-// void imprimirTest(Sistema s){
-//     dir aux = s->RAIZ->pH;
-//     while(aux != NULL){
-//         cout << aux->nombre << " - ";
-//         aux = aux->sH;
-//     }
-// }
-
 dir buscarEspacioDirAlfabeticamente(dir cadenaDirectorios, Cadena nombreDirectorio){
     int cont = 0;
     while(cont < nombreDirectorio.length() && cadenaDirectorios->sH != NULL){
@@ -477,8 +453,6 @@ TipoRet MKDIR (Sistema &s, Cadena nombreDirectorio){
         nuevo->sH = espacioParaColocar->sH;
         espacioParaColocar->sH = nuevo;
     }
-    
-    // imprimirTest(s);
 
     return OK;
 }
@@ -503,16 +477,6 @@ TipoRet RMDIR (Sistema &s, Cadena nombreDirectorio){
 
 // MOVE
 
-// Cadena dividirNombreCD(Cadena ruta, int & cont){
-//     Cadena sigDir;
-//     cont++;
-//     while(ruta[cont] != '/' && cont < ruta.length()){
-//         sigDir += ruta[cont];
-//         cont++;
-//     }
-//     return sigDir;
-// }
-
 dir buscarDirDestino(Sistema s, Cadena directorioDestino){
     if(directorioDestino[0] == '/'){
         dir aux = s->RAIZ;
@@ -536,7 +500,20 @@ dir buscarDirDestino(Sistema s, Cadena directorioDestino){
             casoRaiz = false;
         }
         return aux;
+    } else {
+        cout << "La ruta debe ser válida" << endl;
+        return NULL;
     }
+}
+
+bool esDirectorioPadre(dir actual, dir subdirectorio){
+    if (subdirectorio == NULL){
+        return false;
+    }
+    if (subdirectorio->padre == actual){
+        return true;
+    }
+    return esDirectorioPadre(actual, subdirectorio->padre) || false;
 }
 
 dir buscarAnteriorMOVEDir(dir cadenaDirectorios, Cadena nombreDir){
@@ -546,14 +523,14 @@ dir buscarAnteriorMOVEDir(dir cadenaDirectorios, Cadena nombreDir){
     return cadenaDirectorios;
 }
 
-archivos buscarAnteriorMOVEFile(archivos cadenaArchivos, Cadena nombreArch){
-    while(cadenaArchivos->sig != NULL && cadenaArchivos->sig->nombre != nombreArch){
+archivos buscarAnteriorMOVEFile(archivos cadenaArchivos, Cadena nombreArch, Cadena extension){
+    while(cadenaArchivos->sig != NULL && (cadenaArchivos->sig->nombre != nombreArch && cadenaArchivos->sig->extension != extension)){
         cadenaArchivos = cadenaArchivos->sig;
     }
     return cadenaArchivos;
 }
 
-bool existeDir(dir & cadenaDirectorios, Cadena nombre){
+bool existeDir(dir cadenaDirectorios, Cadena nombre){
     while(cadenaDirectorios->sH != NULL && cadenaDirectorios->nombre != nombre){
         cadenaDirectorios = cadenaDirectorios->sH;
     }
@@ -563,12 +540,11 @@ bool existeDir(dir & cadenaDirectorios, Cadena nombre){
     return false;
 }
 
-bool existeArchMOVE(archivos & cadenaArchivos, archivos actual, Cadena nombre, Cadena extension){
-    cadenaArchivos = actual;
-    while(cadenaArchivos->sig != NULL && cadenaArchivos->nombre != nombre && cadenaArchivos->extension != extension){
-        cadenaArchivos = cadenaArchivos->sig;
+bool existeArchMOVE(archivos & actual, Cadena nombre, Cadena extension){
+    while(actual->sig != NULL && (actual->sig->nombre != nombre && actual->sig->extension != extension)){
+        actual = actual->sig;
     }
-    if(cadenaArchivos->nombre == nombre && cadenaArchivos->extension == extension){
+    if(actual->sig->nombre == nombre && actual->sig->extension == extension){
         return true;
     }
     return false;
@@ -580,14 +556,26 @@ TipoRet MOVE (Sistema &s, Cadena nombre, Cadena directorioDestino){
         cout << "No existe el directorio al que se pretende ir" << endl;
         return ERROR;
     }
+    if(destino == s->actual){
+        cout << "El directorio destino es igual al directorio actual" << endl;
+        return ERROR;
+    }
+    if(esDirectorioPadre(s->actual, destino)){
+        cout << "El directorio destino es un subdirectorio del directorio padre" << endl;
+        return ERROR;
+    }
     if(tomarExtension(nombre) == ""){
+        if(!existeDir(s->actual->pH, nombre)){
+            cout << "No existe el directorio que se pretende mover" << endl;
+            return ERROR;
+        }
         dir anteriorMOVE = buscarAnteriorMOVEDir(s->actual->pH, nombre);
         dir espacioDir;
         if(existeDir(destino->pH, nombre)){
             dir aux = destino->pH;
-            // while(aux->sH->nombre != nombre){
-            //     aux = aux->sH;
-            // }
+            while(aux->sH->nombre != nombre){
+                aux = aux->sH;
+            }
             espacioDir = aux;
             dir borrar = espacioDir->sH;
             dir MOVE = anteriorMOVE->sH;
@@ -597,7 +585,6 @@ TipoRet MOVE (Sistema &s, Cadena nombre, Cadena directorioDestino){
             borrarHijos(borrar);
             return OK;
         } else {
-            cout << "entre al else linea 587" << endl;
             espacioDir = buscarEspacioDirAlfabeticamente(destino->pH, nombre);
         }
         if(espacioDir->sH == NULL){
@@ -612,14 +599,15 @@ TipoRet MOVE (Sistema &s, Cadena nombre, Cadena directorioDestino){
         }
         return OK;
     } else {
-        archivos anteriorMOVE = buscarAnteriorMOVEFile(s->actual->file, nombre);
+        archivos aux;
+        if(!existeArch(aux, s, tomarNombre(nombre), tomarExtension(nombre))){
+            cout << "No existe el archivo que se pretende mover" << endl;
+            return ERROR;
+        }
+        archivos anteriorMOVE = buscarAnteriorMOVEFile(s->actual->file, tomarNombre(nombre), tomarExtension(nombre));
         archivos espacioArch;
-        if (existeArchMOVE(espacioArch, s->actual->file, tomarNombre(nombre), tomarExtension(nombre))){
-            archivos aux = espacioArch->sig;
-            // while (aux->sig != NULL && aux->sig->nombre != nombre){
-            //     aux = aux->sig;
-            // }
-            espacioArch = aux;
+        if (existeArchMOVE(destino->file, tomarNombre(nombre), tomarExtension(nombre))){
+            espacioArch = destino->file;
             archivos borrar = espacioArch->sig;
             archivos MOVE = anteriorMOVE->sig;
             anteriorMOVE->sig = MOVE->sig;
@@ -886,23 +874,10 @@ void manejarComando(Sistema & MAIN){
 
 // MAIN
 
-// leerExistentes sirve para verificar que el código esté funcionando como es debido
-
-void leerExistentes(Sistema s){
-    cout << s->nombre << endl;
-    cout << s->RAIZ->nombre << endl;
-    while (s->RAIZ->file != NULL){
-        cout << s->RAIZ->file->nombre << endl;
-        cout << s->RAIZ->file->contenido << endl;
-        s->RAIZ->file = s->RAIZ->file->sig;
-    }
-}
-
 int main(){
     // Definición del main
 
     Sistema s = NULL;
 
     manejarComando(s);
-    leerExistentes(s);
 }
