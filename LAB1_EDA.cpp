@@ -546,15 +546,29 @@ dir buscarAnteriorMOVEDir(dir cadenaDirectorios, Cadena nombreDir){
     return cadenaDirectorios;
 }
 
-archivos buscarAnteriorMOVEFile(archivos cadenaArchvos, Cadena nombreArch){
-    
+archivos buscarAnteriorMOVEFile(archivos cadenaArchivos, Cadena nombreArch){
+    while(cadenaArchivos->sig != NULL && cadenaArchivos->sig->nombre != nombreArch){
+        cadenaArchivos = cadenaArchivos->sig;
+    }
+    return cadenaArchivos;
 }
 
-bool existeDir(dir cadenaDirectorios, Cadena nombre){
+bool existeDir(dir & cadenaDirectorios, Cadena nombre){
     while(cadenaDirectorios->sH != NULL && cadenaDirectorios->nombre != nombre){
         cadenaDirectorios = cadenaDirectorios->sH;
     }
     if(cadenaDirectorios->nombre == nombre){
+        return true;
+    }
+    return false;
+}
+
+bool existeArchMOVE(archivos & cadenaArchivos, archivos actual, Cadena nombre, Cadena extension){
+    cadenaArchivos = actual;
+    while(cadenaArchivos->sig != NULL && cadenaArchivos->nombre != nombre && cadenaArchivos->extension != extension){
+        cadenaArchivos = cadenaArchivos->sig;
+    }
+    if(cadenaArchivos->nombre == nombre && cadenaArchivos->extension == extension){
         return true;
     }
     return false;
@@ -567,14 +581,13 @@ TipoRet MOVE (Sistema &s, Cadena nombre, Cadena directorioDestino){
         return ERROR;
     }
     if(tomarExtension(nombre) == ""){
-        cout << "entre al if linea 570" << endl;
         dir anteriorMOVE = buscarAnteriorMOVEDir(s->actual->pH, nombre);
         dir espacioDir;
         if(existeDir(destino->pH, nombre)){
             dir aux = destino->pH;
-            while(aux->sH->nombre != nombre){
-                aux = aux->sH;
-            }
+            // while(aux->sH->nombre != nombre){
+            //     aux = aux->sH;
+            // }
             espacioDir = aux;
             dir borrar = espacioDir->sH;
             dir MOVE = anteriorMOVE->sH;
@@ -600,6 +613,34 @@ TipoRet MOVE (Sistema &s, Cadena nombre, Cadena directorioDestino){
         return OK;
     } else {
         archivos anteriorMOVE = buscarAnteriorMOVEFile(s->actual->file, nombre);
+        archivos espacioArch;
+        if (existeArchMOVE(espacioArch, s->actual->file, tomarNombre(nombre), tomarExtension(nombre))){
+            archivos aux = espacioArch->sig;
+            // while (aux->sig != NULL && aux->sig->nombre != nombre){
+            //     aux = aux->sig;
+            // }
+            espacioArch = aux;
+            archivos borrar = espacioArch->sig;
+            archivos MOVE = anteriorMOVE->sig;
+            anteriorMOVE->sig = MOVE->sig;
+            MOVE->sig = borrar->sig;
+            espacioArch->sig = MOVE;
+            delete borrar;
+            return OK;
+        } else {
+            espacioArch = buscarEspacioArchAlfabeticamente(destino->file, tomarNombre(nombre), tomarExtension(nombre));
+        }
+        if(espacioArch->sig == NULL){
+            espacioArch->sig = anteriorMOVE->sig;
+            anteriorMOVE->sig = anteriorMOVE->sig->sig;
+            espacioArch->sig->sig = NULL;
+        } else {
+            archivos MOVE = anteriorMOVE->sig;
+            anteriorMOVE->sig = MOVE->sig;
+            MOVE->sig = espacioArch->sig;
+            espacioArch->sig = MOVE;
+        }
+        return OK;
     }
 }
 
