@@ -540,7 +540,7 @@ bool existeDir(dir cadenaDirectorios, Cadena nombre){
     return false;
 }
 
-bool existeArchMOVE(archivos & actual, Cadena nombre, Cadena extension){
+bool existeArchAnt(archivos & actual, Cadena nombre, Cadena extension){
     while(actual->sig != NULL && (actual->sig->nombre != nombre && actual->sig->extension != extension)){
         actual = actual->sig;
     }
@@ -606,7 +606,7 @@ TipoRet MOVE (Sistema &s, Cadena nombre, Cadena directorioDestino){
         }
         archivos anteriorMOVE = buscarAnteriorMOVEFile(s->actual->file, tomarNombre(nombre), tomarExtension(nombre));
         archivos espacioArch;
-        if (existeArchMOVE(destino->file, tomarNombre(nombre), tomarExtension(nombre))){
+        if (existeArchAnt(destino->file, tomarNombre(nombre), tomarExtension(nombre))){
             espacioArch = destino->file;
             archivos borrar = espacioArch->sig;
             archivos MOVE = anteriorMOVE->sig;
@@ -707,6 +707,112 @@ TipoRet DIR (Sistema &s, Cadena parametro){
     return OK;
 }
 
+// MDFY
+
+int buscarTexto(Cadena contenido, Cadena textoAModificar){
+    int mover = 0;
+    int i = 0;
+    for(i; i < contenido.length(); i++){
+        if(contenido[i] == textoAModificar[0]){
+            mover = i;
+            for(int j = 0; j < textoAModificar.length(); j++){
+                if(contenido[mover] != textoAModificar[j]){
+                    break;
+                }
+                if(j == (textoAModificar.length()-1)){
+                    return i;
+                }
+                mover++;
+            }
+        }
+    }
+    return i+1;
+}
+
+Cadena desplazarTexto(Cadena contenido, int posicion, int espacios){
+    int i = posicion;
+    for (i; i < contenido.length(); i++){
+        if ((i + espacios) < contenido.length()){
+            contenido[i] = contenido[i+espacios];
+        } else {
+            break;
+        }
+    }
+    for (i; i < contenido.length(); i++){
+        contenido[i] = ' ';
+    }
+    return contenido;
+}
+
+Cadena modificarContenido(Cadena contenido, Cadena textoAModificar, Cadena nuevoTexto){
+    Cadena copia = contenido;
+    int cont = 0;
+    int i = buscarTexto(contenido, textoAModificar);
+    if(i == 23){
+        return copia;
+    }
+    if(textoAModificar.length() == nuevoTexto.length()){
+        for (i; i < contenido.length(); i++){
+            if (cont < nuevoTexto.length()){
+                contenido[i] = nuevoTexto[cont];
+                cont++;
+            } else {
+                return contenido;
+            }
+        }
+    }
+    if(textoAModificar.length() > nuevoTexto.length()){
+        int posicion = i + nuevoTexto.length();
+        for (i; i < contenido.length(); i++){
+            if (cont < nuevoTexto.length()){
+                contenido[i] = nuevoTexto[cont];
+                cont++;
+            }
+        }
+        contenido = desplazarTexto(contenido, posicion, ((textoAModificar.length()-nuevoTexto.length())-1));
+        return contenido;
+    }
+
+    return contenido;
+}
+
+TipoRet MDFY(Sistema & s, Cadena archivo, Cadena textoAModificar, Cadena nuevoTexto){
+    archivos buscar;
+    if(existeArch(buscar, s, tomarNombre(archivo), tomarExtension(archivo))){
+        Cadena nuevoContenido = modificarContenido(buscar->contenido, textoAModificar, nuevoTexto);
+        if (nuevoContenido == buscar->contenido){
+            cout << "No se encontró el texto especificado dentro del archivo o es idéntico al anterior" << endl;
+            return ERROR;
+        }
+        buscar->contenido = nuevoContenido;
+        return OK;
+    } else {
+        cout << "No existe el archivo especificado en el directorio actual" << endl;
+        return ERROR;
+    }
+}
+
+// REX
+
+TipoRet REX(dir actual, Cadena ruta){
+    if(actual->file == NULL){
+        return;
+    }
+    while()
+}
+
+// CREATEUSR
+
+TipoRet CREATEUSR(Sistema & s, string nombreUsuario){
+    
+}
+
+// DELUSR
+
+TipoRet DELUSR(Sistema & s, string nombreUsuario){
+    
+}
+
 // ANÁLISIS DE COMANDO
 
 void dividirComando(Cadena comandoEntero, int & cont, Cadena & Cambio){
@@ -734,10 +840,10 @@ int convertirAInt(Cadena parametro){
     return numero;
 }
 
-void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Sistema & MAIN){
+void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Cadena parametro3, Sistema & MAIN){
     int cont = 0;
     if (comando == "CREARSISTEMA") {
-        if(parametro1 == "" && parametro2 == ""){
+        if(parametro1 == "" && parametro2 == "" && parametro3 == ""){
             CREARSISTEMA(MAIN);
             return;
         } else {
@@ -746,7 +852,7 @@ void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Siste
         }
     }
     if(comando == "DESTRUIRSISTEMA"){
-        if(parametro1 == "" && parametro2 == ""){
+        if(parametro1 == "" && parametro2 == "" && parametro3 == ""){
             DESTRUIRSISTEMA(MAIN);
             return;    
         } else {
@@ -755,7 +861,7 @@ void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Siste
         }  
     }
     if (comando == "CREATEFILE") {
-        if (parametro1 != "" && parametro2 == ""){
+        if (parametro1 != "" && parametro2 == "" && parametro3 == ""){
             CREATEFILE(MAIN, parametro1);
             return;
         } else {
@@ -763,7 +869,7 @@ void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Siste
         }
     }
     if (comando == "DELETE") {
-        if(parametro1 != "" && parametro2 == ""){
+        if(parametro1 != "" && parametro2 == "" && parametro3 == ""){
             DELETE(MAIN, parametro1);
             return;
         } else {
@@ -772,34 +878,34 @@ void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Siste
         }
     }
     if (comando == "ATTRIB") {
-        if (parametro1 != "" && parametro2 != ""){
+        if (parametro1 != "" && parametro2 != ""  && parametro3 == ""){
             ATTRIB(MAIN, parametro1, parametro2);
             return;
         } else {
-            cout << "El comando ATTRIB necesita ambos parámetros" << endl;
+            cout << "El comando ATTRIB necesita dos parámetros" << endl;
             return;
         }
     }
     if (comando == "IF") {
-        if (parametro1 != "" && parametro2 != ""){
+        if (parametro1 != "" && parametro2 != ""  && parametro3 == ""){
             IF(MAIN, parametro1, parametro2);
             return;
         } else {
-            cout << "El comando IF necesita ambos parámetros" << endl;
+            cout << "El comando IF necesita dos parámetros" << endl;
             return;
         }
     }
     if (comando == "DF") {
-        if (parametro1 != "" && parametro2 != ""){
+        if (parametro1 != "" && parametro2 != "" && parametro3 == ""){
             DF(MAIN, parametro1, convertirAInt(parametro2));
             return;
         } else {
-            cout << "El comando DF necesita ambos parámetros" << endl;
+            cout << "El comando DF necesita dos parámetros" << endl;
             return;
         }
     }
     if (comando == "TYPE") {
-        if (parametro1 != "" && parametro2 == ""){
+        if (parametro1 != "" && parametro2 == "" && parametro3 == ""){
             TYPE(MAIN, parametro1);
             return;
         } else {
@@ -808,7 +914,7 @@ void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Siste
         }
     }
     if(comando == "CD"){
-        if (parametro1 != "" && parametro2 == ""){
+        if (parametro1 != "" && parametro2 == "" && parametro3 == ""){
             CD(MAIN, parametro1);
             return;
         } else {
@@ -817,7 +923,7 @@ void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Siste
         }
     }
     if(comando == "MKDIR"){
-        if (parametro1 != "" && parametro2 == ""){
+        if (parametro1 != "" && parametro2 == "" && parametro3 == ""){
             MKDIR(MAIN, parametro1);
             return;
         } else {
@@ -826,7 +932,7 @@ void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Siste
         }
     }
     if(comando == "RMDIR"){
-        if (parametro1 != "" && parametro2 == ""){
+        if (parametro1 != "" && parametro2 == "" && parametro3 == ""){
             RMDIR(MAIN, parametro1);
             return;
         } else {
@@ -835,20 +941,29 @@ void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Siste
         }
     }
     if(comando == "MOVE"){
-        if(parametro1 != "" && parametro2 != ""){
+        if(parametro1 != "" && parametro2 != "" && parametro3 == ""){
             MOVE(MAIN, parametro1, parametro2);
             return;
         } else {
-            cout << "El comando MOVE necesita ambos parámetros" << endl;
+            cout << "El comando MOVE necesita dos parámetros" << endl;
             return;
         }
     }
     if(comando == "DIR"){
-        if (parametro2 == ""){
+        if (parametro2 == "" && parametro3 == ""){
             DIR(MAIN, parametro1);
             return;
         } else {
             cout << "El comando DIR puede tomar solo un parámetro" << endl;
+            return;
+        }
+    }
+    if(comando == "MDFY"){
+        if (parametro1 != "" && parametro2 != "" && parametro3 != ""){
+            MDFY(MAIN, parametro1, parametro2, parametro3);
+            return;
+        } else {
+            cout << "El comando MDFY necesita tres parámetros" << endl;
             return;
         }
     }
@@ -859,6 +974,8 @@ void manejarComando(Sistema & MAIN){
     Cadena comando;
     Cadena parametro1;
     Cadena parametro2;
+    Cadena parametro3;
+    Cadena ruta;
     int cont;
     do {
     getline(cin, comandoEntero);
@@ -867,7 +984,8 @@ void manejarComando(Sistema & MAIN){
         dividirComando(comandoEntero, cont, comando);
         dividirComando(comandoEntero, cont, parametro1);
         dividirComando(comandoEntero, cont, parametro2);
-        analizarComando(comando, parametro1, parametro2, MAIN);
+        dividirComando(comandoEntero, cont, parametro3);
+        analizarComando(comando, parametro1, parametro2, parametro3, MAIN);
     }
     } while (comandoEntero != "EXIT");
 }
@@ -875,8 +993,6 @@ void manejarComando(Sistema & MAIN){
 // MAIN
 
 int main(){
-    // Definición del main
-
     Sistema s = NULL;
 
     manejarComando(s);
