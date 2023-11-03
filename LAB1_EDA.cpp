@@ -18,6 +18,7 @@ struct archivo{
     bool escritura = true;
     Cadena contenido;
     archivo * sig;
+    Cadena creador;
 };
 
 typedef archivo * archivos;
@@ -32,10 +33,19 @@ struct directorio {
 
 typedef directorio * dir;
 
+struct user{
+    Cadena nombre;
+    user * sig;
+};
+
+typedef user * users;
+
 struct _sistema{
     Cadena nombre = "SISTEMA";
     dir RAIZ;
     dir actual;
+    users usuarios;
+    users usuarioActual;
 };
 
 typedef _sistema * Sistema;
@@ -131,6 +141,7 @@ TipoRet CREATEFILE (Sistema & s, Cadena nombreArchivo){
         archivos nuevoArchivo = new archivo;
         nuevoArchivo->nombre = tomarNombre(nombreArchivo);
         nuevoArchivo->extension = tomarExtension(nombreArchivo);
+        nuevoArchivo->creador = s->usuarioActual->nombre;
 
         if (puntFinal->sig == NULL){
             nuevoArchivo->sig = NULL;
@@ -191,6 +202,16 @@ TipoRet ATTRIB (Sistema & s, Cadena nombreArchivo, Cadena parametro){
 
 // IF
 
+bool existeElUsuario(users listaUsuarios, Cadena creador){
+    while(listaUsuarios != NULL){
+        if(listaUsuarios->nombre == creador){
+            return true;
+        }
+        listaUsuarios = listaUsuarios->sig;
+    }
+    return false;
+}
+
 void agregarTexto(archivos aux, Sistema s, Cadena texto){
     if (texto.length() >= TEXTO_MAX){
         aux->contenido = "";
@@ -216,6 +237,10 @@ TipoRet IF (Sistema & s, Cadena nombreArchivo, Cadena texto){
             cout << "El archivo es de sólo lectura" << endl;
             return ERROR;
         }
+        if(aux->creador != s->usuarioActual->nombre && existeElUsuario(s->usuarios, aux->creador)){
+            cout << "No eres el creador de este archivo, por lo que no puedes modificarlo" << endl;
+            return ERROR;
+        }
         agregarTexto(aux, s, texto);
         return OK;
     } else {
@@ -231,6 +256,10 @@ TipoRet DF (Sistema & s, Cadena nombreArchivo, int k){
     if(existeArch(aux, s, tomarNombre(nombreArchivo), tomarExtension(nombreArchivo))){
         if (!aux->escritura){
             cout << "El archivo es de sólo lectura" << endl;
+            return ERROR;
+        }
+        if(aux->creador != s->usuarioActual->nombre && existeElUsuario(s->usuarios, aux->creador)){
+            cout << "No eres el creador de este archivo, por lo que no puedes modificarlo" << endl;
             return ERROR;
         }
         Cadena resultado = "";
@@ -280,8 +309,20 @@ archivos crearArchivoDummy(){
     return dummy;
 }
 
+users crearUsuarioDummy(){
+    users dummy = new user;
+    dummy->nombre = "NULL";
+    dummy->sig = NULL;
+    return dummy;
+}
+
 TipoRet CREARSISTEMA(Sistema & s){
     s = new _sistema;
+
+    // Creamos un primer usuario dummy
+
+    s->usuarios = crearUsuarioDummy();
+    s->usuarioActual = s->usuarios;
     
     s->RAIZ = new directorio;
     s->RAIZ->nombre = "RAIZ";
@@ -744,26 +785,21 @@ Cadena desplazarTexto(Cadena contenido, int posicion, int espacios){
     return contenido;
 }
 
-Cadena adelantarTexto(Cadena contenido, int posicion, int espacios){
-    int i = posicion;
-    for (i; i < contenido.length(); i++){
-        if ((i + espacios) < contenido.length()){
-            contenido[i+espacios] = contenido[i];
-        } else {
-            break;
-        }
+Cadena obtenerTexto(Cadena contenido, int posicion, Cadena textoAModificar, Cadena nuevoTexto){
+    Cadena sig;
+    Cadena ant;
+    for(int i = posicion; i < contenido.length(); i++){
+        sig += contenido[i];
     }
-    for (i; i < contenido.length(); i++){
-        contenido[i] = ' ';
+    for(int j = 0; j < posicion-textoAModificar.length(); j++){
+        ant += contenido[j];
     }
-    if (contenido.length() > 22){
-        Cadena nueva;
-        for (int pos = 0; pos < 22; pos++){
-            nueva += contenido[pos];
-        }
-        return nueva;
+    contenido = ant + nuevoTexto + sig;
+    Cadena contenidoFinal;
+    for (int i = 0; i < 22; i++){
+        contenidoFinal += contenido[i];
     }
-    return contenido;
+    return contenidoFinal;
 }
 
 Cadena modificarContenido(Cadena contenido, Cadena textoAModificar, Cadena nuevoTexto){
@@ -791,21 +827,12 @@ Cadena modificarContenido(Cadena contenido, Cadena textoAModificar, Cadena nuevo
                 cont++;
             }
         }
-        contenido = desplazarTexto(contenido, posicion, (textoAModificar.length()-nuevoTexto.length()));
+        contenido = desplazarTexto(contenido, posicion, (textoAModificar.length() - nuevoTexto.length()));
         return contenido;
     }
     if(textoAModificar.length() < nuevoTexto.length()){
-        // if(22 < ((contenido.length()-textoAModificar.length())+nuevoTexto.length())){
-            
-        // }
-        int posicion = i + nuevoTexto.length();
-        for (i; i < contenido.length(); i++){
-            if (cont < nuevoTexto.length()){
-                contenido[i] = nuevoTexto[cont];
-                cont++;
-            }
-        }
-        contenido = adelantarTexto(contenido, posicion, (textoAModificar.length()-nuevoTexto.length()));
+        int posicion = i + textoAModificar.length();
+        contenido = obtenerTexto(contenido, posicion, textoAModificar, nuevoTexto);
         return contenido;
     }
     return contenido;
@@ -829,23 +856,89 @@ TipoRet MDFY(Sistema & s, Cadena archivo, Cadena textoAModificar, Cadena nuevoTe
 
 // REX
 
-// TipoRet REX(dir actual, Cadena ruta){
-//     if(actual->file == NULL){
-//         return;
-//     }
-//     while()
-// }
+void leerArchivosExtension(dir actual, archivos archivosALeer, Cadena extension){
+    if(archivosALeer == NULL){
+        return;
+    }
+    string ruta;
+    if(archivosALeer->nombre != "NULL" && archivosALeer->extension == extension){
+        cout << obtenerRutaActual(actual, ruta) << "/" << archivosALeer->nombre << "." << archivosALeer->extension << endl;
+    }
+    if(archivosALeer->sig != NULL){
+        leerArchivosExtension(actual, archivosALeer->sig, extension);
+    }
+}
+
+TipoRet REX(Sistema s, dir actual, Cadena extension){
+    if(actual == NULL){
+        return OK;
+    }
+    leerArchivosExtension(actual, actual->file, extension);
+    if(s->actual != actual){
+        REX(s, actual->sH, extension);
+    }
+    REX(s, actual->pH->sH, extension);
+    return OK;
+}
 
 // CREATEUSR
 
 TipoRet CREATEUSR(Sistema & s, string nombreUsuario){
-    
+    if(nombreUsuario == "NULL"){
+        cout << "El nombre de usuario no puede ser NULL" << endl;
+        return ERROR;
+    }
+    users aux = s->usuarios;
+    while(aux->sig != NULL){
+        aux = aux->sig;
+        if (nombreUsuario == aux->nombre){
+            cout << "Ya existe un usuario con ese nombre" << endl;
+            return ERROR;
+        }
+    }
+    users nuevoUsuario = new user;
+    nuevoUsuario->nombre = nombreUsuario;
+    nuevoUsuario->sig = NULL;
+    aux->sig = nuevoUsuario;
+    s->usuarioActual = nuevoUsuario;
+    cout << "El usuario " << nombreUsuario << " ha sido creado con éxito" << endl;
+    return OK;
 }
 
 // DELUSR
 
 TipoRet DELUSR(Sistema & s, string nombreUsuario){
-    
+    users aux = s->usuarios;
+    while(aux->sig != NULL && aux->sig->nombre != nombreUsuario){
+        aux = aux->sig;
+    }
+    if(aux->sig == NULL){
+        cout << "No se encontró el usuario a borrar" << endl;
+        return ERROR;
+    }
+    if(s->usuarioActual->nombre == nombreUsuario){
+        s->usuarioActual = s->usuarios;
+        cout << "Se eliminó el usuario en uso, deberás cambiar a un nuevo usuario" << endl;
+    }
+    users temp = aux->sig;
+    aux->sig = temp->sig;
+    delete temp;
+    cout << "El usuario " << nombreUsuario << " se eliminó exitosamente" << endl;
+    return OK;
+}
+
+TipoRet CHUSR(Sistema & s, string nombreUsuario){
+    users aux = s->usuarios->sig;
+    while(aux != NULL && aux->nombre != nombreUsuario){
+        aux = aux->sig;
+    }
+    if(aux == NULL){
+        cout << "No se encontró el usuario a cambiar" << endl;
+        return ERROR;
+    }
+    s->usuarioActual = aux;
+    cout << "Se cambió al usuario " << nombreUsuario << " exitosamente" << endl;
+    return OK;
 }
 
 // ANÁLISIS DE COMANDO
@@ -897,8 +990,12 @@ void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Caden
     }
     if (comando == "CREATEFILE") {
         if (parametro1 != "" && parametro2 == "" && parametro3 == ""){
-            CREATEFILE(MAIN, parametro1);
-            return;
+            if(MAIN->usuarioActual->nombre != "NULL"){
+                CREATEFILE(MAIN, parametro1);
+                return;
+            } else {
+                cout << "Debes crear un usuario" << endl;
+            }
         } else {
             cout << "El comando CREATEFILE toma solo un parámetro" << endl;
         }
@@ -999,6 +1096,42 @@ void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Caden
             return;
         } else {
             cout << "El comando MDFY necesita tres parámetros" << endl;
+            return;
+        }
+    }
+    if(comando == "REX"){
+        if (parametro1 != "" && parametro2 == "" && parametro3 == ""){
+            REX(MAIN, MAIN->actual, parametro1);
+            return;
+        } else {
+            cout << "El comando REX toma solo un parámetro" << endl;
+            return;
+        }
+    }
+    if(comando == "CREATEUSR"){
+        if (parametro1 != "" && parametro2 == "" && parametro3 == "") {
+            CREATEUSR(MAIN, parametro1);
+            return;
+        } else  {
+            cout << "El comando CREATEUSR toma solo un parámetro" << endl;
+            return;
+        }
+    }
+    if(comando == "DELUSR"){
+        if (parametro1 != "" && parametro2 == "" && parametro3 == "") {
+            DELUSR(MAIN, parametro1);
+            return;
+        } else {
+            cout << "El comando DELUSR toma solo un parámetro" << endl;
+            return;
+        }
+    }
+    if(comando == "CHUSR"){
+        if (parametro1 != "" && parametro2 == "" && parametro3 == "") {
+            CHUSR(MAIN, parametro1);
+            return;
+        } else {
+            cout << "El comando CHUSR toma solo un parámetro" << endl;
             return;
         }
     }
