@@ -744,6 +744,28 @@ Cadena desplazarTexto(Cadena contenido, int posicion, int espacios){
     return contenido;
 }
 
+Cadena adelantarTexto(Cadena contenido, int posicion, int espacios){
+    int i = posicion;
+    for (i; i < contenido.length(); i++){
+        if ((i + espacios) < contenido.length()){
+            contenido[i+espacios] = contenido[i];
+        } else {
+            break;
+        }
+    }
+    for (i; i < contenido.length(); i++){
+        contenido[i] = ' ';
+    }
+    if (contenido.length() > 22){
+        Cadena nueva;
+        for (int pos = 0; pos < 22; pos++){
+            nueva += contenido[pos];
+        }
+        return nueva;
+    }
+    return contenido;
+}
+
 Cadena modificarContenido(Cadena contenido, Cadena textoAModificar, Cadena nuevoTexto){
     Cadena copia = contenido;
     int cont = 0;
@@ -769,10 +791,23 @@ Cadena modificarContenido(Cadena contenido, Cadena textoAModificar, Cadena nuevo
                 cont++;
             }
         }
-        contenido = desplazarTexto(contenido, posicion, ((textoAModificar.length()-nuevoTexto.length())-1));
+        contenido = desplazarTexto(contenido, posicion, (textoAModificar.length()-nuevoTexto.length()));
         return contenido;
     }
-
+    if(textoAModificar.length() < nuevoTexto.length()){
+        // if(22 < ((contenido.length()-textoAModificar.length())+nuevoTexto.length())){
+            
+        // }
+        int posicion = i + nuevoTexto.length();
+        for (i; i < contenido.length(); i++){
+            if (cont < nuevoTexto.length()){
+                contenido[i] = nuevoTexto[cont];
+                cont++;
+            }
+        }
+        contenido = adelantarTexto(contenido, posicion, (textoAModificar.length()-nuevoTexto.length()));
+        return contenido;
+    }
     return contenido;
 }
 
@@ -794,12 +829,12 @@ TipoRet MDFY(Sistema & s, Cadena archivo, Cadena textoAModificar, Cadena nuevoTe
 
 // REX
 
-TipoRet REX(dir actual, Cadena ruta){
-    if(actual->file == NULL){
-        return;
-    }
-    while()
-}
+// TipoRet REX(dir actual, Cadena ruta){
+//     if(actual->file == NULL){
+//         return;
+//     }
+//     while()
+// }
 
 // CREATEUSR
 
@@ -986,6 +1021,9 @@ void manejarComando(Sistema & MAIN){
         dividirComando(comandoEntero, cont, parametro2);
         dividirComando(comandoEntero, cont, parametro3);
         analizarComando(comando, parametro1, parametro2, parametro3, MAIN);
+        if(comando != "DESTRUIRSISTEMA"){
+            cout << obtenerRutaActual(MAIN->actual, ruta) << " > ";
+        }
     }
     } while (comandoEntero != "EXIT");
 }
