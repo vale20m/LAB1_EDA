@@ -54,6 +54,11 @@ typedef _sistema * Sistema;
 
 // CREATEFILE
 
+/*
+Recorre los archivos de un directorio y posiciona un puntero en el archivo anterior al que se va a colocar un nuevo archivo,
+de forma que respete el orden alfabético. En caso de tener mismo nombre, compara las extensiones de cada uno.
+*/
+
 archivos buscarEspacioArchAlfabeticamente(archivos cadenaArchivos, Cadena nombreArchivo, Cadena extensionArchivo){
     int cont = 0;
     while(cadenaArchivos->sig != NULL){
@@ -95,6 +100,8 @@ archivos buscarEspacioArchAlfabeticamente(archivos cadenaArchivos, Cadena nombre
     return cadenaArchivos;
 }
 
+// Devuelve true si en un directorio especificado ya existe un archivo con el mismo nombre y extension, y false en caso contrario.
+
 bool existeArch(archivos & aux, Sistema s, Cadena nombre, Cadena extension){
     aux = s->actual->file;
     while(aux != NULL){
@@ -106,6 +113,8 @@ bool existeArch(archivos & aux, Sistema s, Cadena nombre, Cadena extension){
     return false;
 }
 
+// Toma el nombre de un archivo (sin la extensión).
+
 Cadena tomarNombre(Cadena nombreArchivo){
     Cadena nombre;
     for (int i = 0; i < nombreArchivo.length(); i++){
@@ -115,7 +124,10 @@ Cadena tomarNombre(Cadena nombreArchivo){
             return nombre;
         }
     }
+    return nombre;
 }
+
+// Toma la extensión de un archivo (sin el nombre).
 
 Cadena tomarExtension(Cadena nombreArchivo){
     Cadena extensionTemp;
@@ -131,6 +143,8 @@ Cadena tomarExtension(Cadena nombreArchivo){
     }
     return extensionTemp;
 }
+
+// Permite crear un nuevo archivo en el directorio actual (con un nombre especificado), siempre que no haya uno con el mismo nombre y extensión.
 
 TipoRet CREATEFILE (Sistema & s, Cadena nombreArchivo){
     archivos puntVerificar = NULL;
@@ -159,6 +173,8 @@ TipoRet CREATEFILE (Sistema & s, Cadena nombreArchivo){
 
 // DELETE
 
+// Elimina un archivo del directorio actual (según el nombre especificado), siempre y cuando no sea de solo lectura.
+
 TipoRet DELETE (Sistema & s, Cadena nombreArchivo){
     archivos borrar = NULL;
     if(existeArch(borrar, s, tomarNombre(nombreArchivo), tomarExtension(nombreArchivo))){
@@ -181,6 +197,8 @@ TipoRet DELETE (Sistema & s, Cadena nombreArchivo){
 
 // ATTRIB
 
+// Permite modificar los permisos que tiene un archivo (lectura/escritura y solo lectura).
+
 TipoRet ATTRIB (Sistema & s, Cadena nombreArchivo, Cadena parametro){
     archivos aux = NULL;
     if(existeArch(aux, s, tomarNombre(nombreArchivo), tomarExtension(nombreArchivo))){
@@ -202,6 +220,8 @@ TipoRet ATTRIB (Sistema & s, Cadena nombreArchivo, Cadena parametro){
 
 // IF
 
+// Devuelve true en caso de que el usuario especificado se encuentre creado en el sistema, y false en caso contrario.
+
 bool existeElUsuario(users listaUsuarios, Cadena creador){
     while(listaUsuarios != NULL){
         if(listaUsuarios->nombre == creador){
@@ -211,6 +231,8 @@ bool existeElUsuario(users listaUsuarios, Cadena creador){
     }
     return false;
 }
+
+// Agrega un texto al comienzo del contenido de un archivo, y verificando que no supere los 22 caracteres.
 
 void agregarTexto(archivos aux, Sistema s, Cadena texto){
     if (texto.length() >= TEXTO_MAX){
@@ -229,6 +251,8 @@ void agregarTexto(archivos aux, Sistema s, Cadena texto){
         aux->contenido = nuevoTexto;
     }
 }
+
+// Permite modificar el contenido de un archivo, agregando un texto especificado al comienzo de este (en caso de que sea de lectura/escritura).
 
 TipoRet IF (Sistema & s, Cadena nombreArchivo, Cadena texto){
     archivos aux = NULL;
@@ -250,6 +274,8 @@ TipoRet IF (Sistema & s, Cadena nombreArchivo, Cadena texto){
 }
 
 // DF
+
+// Permite modificar el contenido de un archivo, eliminando los k primeros caracteres de este (en caso de que sea de lectura/escritura).
 
 TipoRet DF (Sistema & s, Cadena nombreArchivo, int k){
     archivos aux = NULL;
@@ -276,6 +302,8 @@ TipoRet DF (Sistema & s, Cadena nombreArchivo, int k){
 
 // TYPE
 
+// Devuelve el contenido de un archivo especificado del directorio actual.
+
 TipoRet TYPE (Sistema & s, Cadena nombreArchivo){
     archivos aux = NULL;
     if(existeArch(aux, s, tomarNombre(nombreArchivo), tomarExtension(nombreArchivo))){
@@ -293,6 +321,8 @@ TipoRet TYPE (Sistema & s, Cadena nombreArchivo){
 
 // CREARSISTEMA
 
+// Crea un nodo dummy para los directorios.
+
 dir crearDirectorioDummy(){
     dir dummy = new directorio;
     dummy->nombre = "NULL";
@@ -302,6 +332,8 @@ dir crearDirectorioDummy(){
     return dummy;
 }
 
+// Crea un nodo dummy para los archivos.
+
 archivos crearArchivoDummy(){
     archivos dummy = new archivo;
     dummy->nombre = "NULL";
@@ -309,12 +341,16 @@ archivos crearArchivoDummy(){
     return dummy;
 }
 
+// Crea un nodo dummy para los usuarios.
+
 users crearUsuarioDummy(){
     users dummy = new user;
     dummy->nombre = "NULL";
     dummy->sig = NULL;
     return dummy;
 }
+
+// Crea el sistema, junto con el directorio RAIZ y los respectivos dummies.
 
 TipoRet CREARSISTEMA(Sistema & s){
     s = new _sistema;
@@ -344,6 +380,8 @@ TipoRet CREARSISTEMA(Sistema & s){
 
 // DESTRUIRSISTEMA
 
+// Borra todos los archivos de una lista.
+
 void borrarArchivos(archivos archivosABorrar){
     if(archivosABorrar == NULL){
         return;
@@ -353,6 +391,8 @@ void borrarArchivos(archivos archivosABorrar){
     }
     delete archivosABorrar;
 }
+
+// Borra todos los hijos (directorios) de un directorio, junto con los archivos de cada uno, asi como el mismo directorio (y sus archivos).
 
 void borrarHijos(dir borrar){
     if(borrar == NULL){
@@ -368,13 +408,30 @@ void borrarHijos(dir borrar){
     delete borrar;
 }
 
+// Borra todos los usuarios del sistema.
+
+void borrarUsuarios(users usuariosABorrar){
+    if (usuariosABorrar == NULL){
+        return;
+    }
+    if (usuariosABorrar->sig != NULL){
+        borrarUsuarios(usuariosABorrar->sig);
+    }
+    delete usuariosABorrar;
+}
+
+// Borra todos los archivos y directorios contenidos dentro de RAIZ, asi como el propio directorio y el sistema
+
 TipoRet DESTRUIRSISTEMA(Sistema & s){
     borrarHijos(s->RAIZ);
+    borrarUsuarios(s->usuarios);
     delete s;
     return OK;
 }
 
 // CD
+
+// Devuelve true si ya existe un directorio con el nombre especificado en el directorio actual, y false en caso contrario.
 
 bool nombreDirectorioExistente(dir cadenaDirectorios, Cadena nombreDirectorio){
     while(cadenaDirectorios->sH != NULL){
@@ -386,6 +443,8 @@ bool nombreDirectorioExistente(dir cadenaDirectorios, Cadena nombreDirectorio){
     return false;
 }
 
+// Toma parte de la ruta (nombre de un directorio) ingresada por el usuario, para analizarla correctamente.
+
 Cadena dividirNombreCD(Cadena ruta, int & cont){
     Cadena sigDir;
     cont++;
@@ -395,6 +454,11 @@ Cadena dividirNombreCD(Cadena ruta, int & cont){
     }
     return sigDir;
 }
+
+/*
+Permite mover el puntero actual a los distintos directorios del sistema (RAIZ lleva a la RAIZ, el un ruta lleva al directorio especificado
+y .. permite retroceder al directorio padre).
+*/
 
 TipoRet CD (Sistema & s, Cadena nombreDirectorio){
     if(nombreDirectorio == ".."){
@@ -448,6 +512,8 @@ TipoRet CD (Sistema & s, Cadena nombreDirectorio){
 
 // MKDIR
 
+// Devuelve un puntero al espacio anterior del dir a colocar, en orden alfabético
+
 dir buscarEspacioDirAlfabeticamente(dir cadenaDirectorios, Cadena nombreDirectorio){
     int cont = 0;
     while(cont < nombreDirectorio.length() && cadenaDirectorios->sH != NULL){
@@ -463,6 +529,8 @@ dir buscarEspacioDirAlfabeticamente(dir cadenaDirectorios, Cadena nombreDirector
     }
     return cadenaDirectorios;
 }
+
+// Crea una carpeta con el nombre pasado por parámetro
 
 TipoRet MKDIR (Sistema &s, Cadena nombreDirectorio){
     if(nombreDirectorio == "RAIZ"){
@@ -500,6 +568,8 @@ TipoRet MKDIR (Sistema &s, Cadena nombreDirectorio){
 
 // RMDIR
 
+// Elimina una carpeta
+
 TipoRet RMDIR (Sistema &s, Cadena nombreDirectorio){
     dir aux = s->actual->pH;
     if(nombreDirectorioExistente(aux, nombreDirectorio)){
@@ -517,6 +587,8 @@ TipoRet RMDIR (Sistema &s, Cadena nombreDirectorio){
 }
 
 // MOVE
+
+// Devuelve un puntero al directorio destino
 
 dir buscarDirDestino(Sistema s, Cadena directorioDestino){
     if(directorioDestino[0] == '/'){
@@ -547,6 +619,8 @@ dir buscarDirDestino(Sistema s, Cadena directorioDestino){
     }
 }
 
+// Devuelve true si el subdirectorio es hijo/nieto/etc del directorio actual
+
 bool esDirectorioPadre(dir actual, dir subdirectorio){
     if (subdirectorio == NULL){
         return false;
@@ -557,6 +631,8 @@ bool esDirectorioPadre(dir actual, dir subdirectorio){
     return esDirectorioPadre(actual, subdirectorio->padre) || false;
 }
 
+// Devuelve un puntero a la posición anterior al directorio que se busca mover
+
 dir buscarAnteriorMOVEDir(dir cadenaDirectorios, Cadena nombreDir){
     while(cadenaDirectorios->sH != NULL && cadenaDirectorios->sH->nombre != nombreDir){
         cadenaDirectorios = cadenaDirectorios->sH;
@@ -564,12 +640,16 @@ dir buscarAnteriorMOVEDir(dir cadenaDirectorios, Cadena nombreDir){
     return cadenaDirectorios;
 }
 
+// Devuelve un puntero a la posición anterior al archivo que se busca mover
+
 archivos buscarAnteriorMOVEFile(archivos cadenaArchivos, Cadena nombreArch, Cadena extension){
     while(cadenaArchivos->sig != NULL && (cadenaArchivos->sig->nombre != nombreArch && cadenaArchivos->sig->extension != extension)){
         cadenaArchivos = cadenaArchivos->sig;
     }
     return cadenaArchivos;
 }
+
+// Devuelve true si existe el directorio en la cadena especificada
 
 bool existeDir(dir cadenaDirectorios, Cadena nombre){
     while(cadenaDirectorios->sH != NULL && cadenaDirectorios->nombre != nombre){
@@ -581,6 +661,8 @@ bool existeDir(dir cadenaDirectorios, Cadena nombre){
     return false;
 }
 
+// Devuelve true si existe el archivo en la cadena especificada
+
 bool existeArchAnt(archivos & actual, Cadena nombre, Cadena extension){
     while(actual->sig != NULL && (actual->sig->nombre != nombre && actual->sig->extension != extension)){
         actual = actual->sig;
@@ -590,6 +672,8 @@ bool existeArchAnt(archivos & actual, Cadena nombre, Cadena extension){
     }
     return false;
 }
+
+// Mueve un directorio o carpeta a una nueva ruta especificada
 
 TipoRet MOVE (Sistema &s, Cadena nombre, Cadena directorioDestino){
     dir destino = buscarDirDestino(s, directorioDestino);
@@ -675,6 +759,8 @@ TipoRet MOVE (Sistema &s, Cadena nombre, Cadena directorioDestino){
 
 // DIR
 
+// Lista una lista de archivos
+
 void leerArchivos(archivos archivosALeer, Cadena ruta){
     if(archivosALeer == NULL){
         return;
@@ -686,6 +772,8 @@ void leerArchivos(archivos archivosALeer, Cadena ruta){
         leerArchivos(archivosALeer->sig, ruta);
     }
 }
+
+// Lista una lista de directorios junto a sus archivos
 
 void leerCarpeta(dir carpetaALeer, Cadena ruta){
     if(carpetaALeer == NULL){
@@ -704,6 +792,8 @@ void leerCarpeta(dir carpetaALeer, Cadena ruta){
     }
 }
 
+// Devuelve la ruta actual en el árbol de directorios
+
 Cadena obtenerRutaActual(dir actual, Cadena ruta){
     if (actual == NULL){
         return ruta;
@@ -713,6 +803,8 @@ Cadena obtenerRutaActual(dir actual, Cadena ruta){
     ruta = obtenerRutaActual(actual->padre, ruta);
     return ruta;
 }
+
+// Lista los archios y directorios de la carpeta actual
 
 void obtenerContenido(dir actual, Cadena ruta){
     cout << ruta << endl;
@@ -737,6 +829,8 @@ void obtenerContenido(dir actual, Cadena ruta){
     }
 }
 
+// Lista archivos y directorios
+
 TipoRet DIR (Sistema &s, Cadena parametro){
     Cadena ruta;
     if(parametro == "/S"){
@@ -749,6 +843,8 @@ TipoRet DIR (Sistema &s, Cadena parametro){
 }
 
 // MDFY
+
+// Busca el texto pasado por parámetro en un string, y devuelve el lugar de su primera letra
 
 int buscarTexto(Cadena contenido, Cadena textoAModificar){
     int mover = 0;
@@ -770,6 +866,8 @@ int buscarTexto(Cadena contenido, Cadena textoAModificar){
     return i+1;
 }
 
+// Desplaza el texto "espacios" lugares hacia la izquierda
+
 Cadena desplazarTexto(Cadena contenido, int posicion, int espacios){
     int i = posicion;
     for (i; i < contenido.length(); i++){
@@ -785,6 +883,8 @@ Cadena desplazarTexto(Cadena contenido, int posicion, int espacios){
     return contenido;
 }
 
+// Devuelve la cadena de texto introducida por parámetro por una modificada en el lugar posicion por el nuevo texto
+
 Cadena obtenerTexto(Cadena contenido, int posicion, Cadena textoAModificar, Cadena nuevoTexto){
     Cadena sig;
     Cadena ant;
@@ -796,11 +896,13 @@ Cadena obtenerTexto(Cadena contenido, int posicion, Cadena textoAModificar, Cade
     }
     contenido = ant + nuevoTexto + sig;
     Cadena contenidoFinal;
-    for (int i = 0; i < 22; i++){
+    for (int i = 0; i < TEXTO_MAX; i++){
         contenidoFinal += contenido[i];
     }
     return contenidoFinal;
 }
+
+// Cambia el texto a modificar por el nuevo texto
 
 Cadena modificarContenido(Cadena contenido, Cadena textoAModificar, Cadena nuevoTexto){
     Cadena copia = contenido;
@@ -838,6 +940,8 @@ Cadena modificarContenido(Cadena contenido, Cadena textoAModificar, Cadena nuevo
     return contenido;
 }
 
+// Modifica el texto de un archivo por otro nuevo pasado por parámetro
+
 TipoRet MDFY(Sistema & s, Cadena archivo, Cadena textoAModificar, Cadena nuevoTexto){
     archivos buscar;
     if(existeArch(buscar, s, tomarNombre(archivo), tomarExtension(archivo))){
@@ -856,6 +960,8 @@ TipoRet MDFY(Sistema & s, Cadena archivo, Cadena textoAModificar, Cadena nuevoTe
 
 // REX
 
+// Lee el nombre de todos los archivos que coincidan en el nombre de extensión pasado por parametro
+
 void leerArchivosExtension(dir actual, archivos archivosALeer, Cadena extension){
     if(archivosALeer == NULL){
         return;
@@ -868,6 +974,8 @@ void leerArchivosExtension(dir actual, archivos archivosALeer, Cadena extension)
         leerArchivosExtension(actual, archivosALeer->sig, extension);
     }
 }
+
+// Lista todos los archivos, en profundidad, con el nombre de extensión pasado por parámetro
 
 TipoRet REX(Sistema s, dir actual, Cadena extension){
     if(actual == NULL){
@@ -882,6 +990,8 @@ TipoRet REX(Sistema s, dir actual, Cadena extension){
 }
 
 // CREATEUSR
+
+// Crea un usuario
 
 TipoRet CREATEUSR(Sistema & s, string nombreUsuario){
     if(nombreUsuario == "NULL"){
@@ -907,6 +1017,8 @@ TipoRet CREATEUSR(Sistema & s, string nombreUsuario){
 
 // DELUSR
 
+// Elimina un usuario
+
 TipoRet DELUSR(Sistema & s, string nombreUsuario){
     users aux = s->usuarios;
     while(aux->sig != NULL && aux->sig->nombre != nombreUsuario){
@@ -927,6 +1039,10 @@ TipoRet DELUSR(Sistema & s, string nombreUsuario){
     return OK;
 }
 
+// CHUSR
+
+// Permite cambiar a un usuario existente
+
 TipoRet CHUSR(Sistema & s, string nombreUsuario){
     users aux = s->usuarios->sig;
     while(aux != NULL && aux->nombre != nombreUsuario){
@@ -942,6 +1058,8 @@ TipoRet CHUSR(Sistema & s, string nombreUsuario){
 }
 
 // ANÁLISIS DE COMANDO
+
+// Didive el comando especificado
 
 void dividirComando(Cadena comandoEntero, int & cont, Cadena & Cambio){
     Cambio = "";
@@ -960,6 +1078,8 @@ void dividirComando(Cadena comandoEntero, int & cont, Cadena & Cambio){
     cont++;
 }
 
+// Transforma un string de números a un entero
+
 int convertirAInt(Cadena parametro){
     int numero = 0;
     for(int i = 0; i < parametro.length(); i++){
@@ -967,6 +1087,8 @@ int convertirAInt(Cadena parametro){
     }
     return numero;
 }
+
+// Analiza el comando introducido para hacer un correcto llamado a la función especificada
 
 void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Cadena parametro3, Sistema & MAIN){
     int cont = 0;
@@ -1136,6 +1258,8 @@ void analizarComando(Cadena comando, Cadena parametro1, Cadena parametro2, Caden
         }
     }
 }
+
+// Es el bucle que permite ejecutar múltiples comandos uno detrás de otro
 
 void manejarComando(Sistema & MAIN){
     Cadena comandoEntero;
